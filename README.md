@@ -87,7 +87,7 @@ O servidor estará disponível em `http://127.0.0.1:8000/`
 1. Acesse: `http://127.0.0.1:8000/admin/`
 2. Login com as credenciais do superuser:
    - **Usuário:** kayquebrigadeiro
-   - **Senha:** A senha que você criou durante o setup
+   - **Senha:** senha123
 
 ## Rotas da API
 
