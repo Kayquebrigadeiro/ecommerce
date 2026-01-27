@@ -4,7 +4,14 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 import json
-
+from rest_framework.test import APITestCase, APIClient
+from django.contrib.auth.models import User
+from usuarios.models import PerfilUsuario
+from rest_framework import status
+from secrets import token_urlsafe
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import smart_bytes
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 class RegistroTestCase(APITestCase):
     """Testes para endpoint de registro de usuários"""
@@ -249,3 +256,70 @@ class IntegracaoFluxoCompletoTestCase(APITestCase):
         dados_logout = {'refresh': refresh_token}
         response_logout = self.client.post(self.logout_url, dados_logout, format='json')
         self.assertEqual(response_logout.status_code, status.HTTP_205_RESET_CONTENT)
+class EmailVerificationTestCase(APITestCase):
+    """Testes para verificação de email"""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='senha_forte_123'
+        )
+        self.perfil = PerfilUsuario.objects.create(user=self.user)
+        self.token = token_urlsafe(32)
+        self.perfil.email_verification_token = self.token
+        self.perfil.save()
+        self.verify_url = '/api/verify-email/'
+        self.resend_url = '/api/resend-verification/'
+    
+    def test_verificaçao_email_sucesso(self):
+        """Teste de verificação de email bem-sucedida"""
+        dados = {'token': self.token}
+        response = self.client.post(self.verify_url, dados, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.perfil.refresh_from_db()
+        self.assertTrue(self.perfil.is_email_verified)
+        
+    def test_verificaçao_email_token_invalido(self):
+        responce = self.client.post(self.verify_url, {'token': 'token_invalido'}, format='json')
+        self.assertEqual(responce.status_code, status.HTTP_400_BAD_REQUEST)
+        self.perfil.refresh_from_db()
+        self.assertNotEqual(self.perfil.is_email_verified, True)
+class PasswordResetTestCase(APITestCase):
+    """Testes para reset de senha"""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='senha_forte_123'
+        )
+        self.reset_request_url = '/api/password-reset/'
+        self.reset_confirm_url = '/api/password-reset-confirm/'
+    def test_reset_password_flow(self):
+        # 1- Solicitar reset de senha, rs gg
+        response= self.client.post(self.reset_request_url, {'email': self.user.email}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # 2- Gerar manualmente token e uidb64 hehe
+        uidb64 = urlsafe_base64_encode(smart_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+        # 3- Confirmar novo password
+        dados = {
+            "uidb64": uidb64,
+            "token": token,
+            "password": "novasenha123",
+            "password2": "novasenha123"
+        }
+        response2=self.client.post(self.reset_confirm_url, dados, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        # Recarregar usuário para obter dados atualizados
+        self.user.refresh_from_db()
+        # Verificar que a senha foi de fato alterada
+        self.assertTrue(self.user.check_password('novasenha123'))
+        self.assertFalse(self.user.check_password('senha_forte_123'))
+        #4- Login com nova senha !!!!!!!!!!
+        login = self.client.post('/api/token/', {'username': 'testuser', 'password': 'novasenha123'}, format='json')
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+        self.assertIn('access', login.data)

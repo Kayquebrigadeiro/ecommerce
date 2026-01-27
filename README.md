@@ -4,47 +4,211 @@
 
 **Prioridade Imediata - CONCLUÍDA**
 
-- ✅ **Testes Automatizados** (15 testes passando)
-- ✅ **Recuperação de Senha** (endpoints + email)
-- ✅ **Verificação de Email** (token + reenvio)
+- ✅ **Testes Automatizados** (18 testes passando)
+- ✅ **Recuperação de Senha** (endpoints + email + invalidação de tokens)
+- ✅ **Verificação de Email** (token com expiração 24h + reenvio)
 - ✅ **CORS** (configurado e funcional)
+- ✅ **Segurança Avançada** (expiração de tokens, mensagens padronizadas, logout forçado)
 
 **Próximas Etapas**: Segurança em Produção, Docker, Documentação Swagger
 
 ---
 
-## Anotações
-- Data e horário: 22 de janeiro de 2026
-- Projeto Django REST Framework configurado e rodando
-- **19:20 - Implementações finalizadas:**
-  - ✅ Instalado `djangorestframework-simplejwt` para autenticação JWT
-  - ✅ Corrigidos erros de importação em `usuarios/serializers.py` e `views.py` (Perfil → PerfilUsuario)
-  - ✅ Corrigido arquivo `ecommerce/urls.py` com imports e rotas corretas
-  - ✅ Criado superuser `kayquebrigadeiro`
-  - ✅ Token JWT funcionando (access e refresh tokens)
-  - ✅ Implementado token blacklist com `rest_framework_simplejwt.token_blacklist`
-  - ✅ Criada view de logout (`/api/logout/`) que invalida refresh tokens
-  - ✅ Testado com sucesso: obtenção de tokens, renovação e invalidação
+## 📋 Anotações Completas
 
-- **19:50 - Testes e Recuperação de Senha:**
-  - ✅ Implementados 15 testes automatizados (APITestCase) - TODOS PASSANDO
-    - Testes de registro, login, refresh de token e logout
-    - Testes de fluxo completo de autenticação
-  - ✅ Endpoints de recuperação de senha:
-    - `POST /api/password-reset/` - Enviar email de reset
-    - `POST /api/password-reset-confirm/` - Confirmar nova senha
-  - ✅ Validação de token usando PasswordResetTokenGenerator
-  - ✅ Configurado backend de email (console para dev)
+### Data: 22 de janeiro de 2026 [15:14]
+- **Projeto Django REST Framework configurado e rodando**
+- ✅ Instalado `djangorestframework-simplejwt` para autenticação JWT
+- ✅ Corrigidos erros de importação em `usuarios/serializers.py` e `views.py` (Perfil → PerfilUsuario)
+- ✅ Corrigido arquivo `ecommerce/urls.py` com imports e rotas corretas
+- ✅ Criado superuser `kayquebrigadeiro` com senha `senha123`
+- ✅ Token JWT funcionando (access e refresh tokens)
+- ✅ Implementado token blacklist com `rest_framework_simplejwt.token_blacklist`
+- ✅ Criada view de logout (`/api/logout/`) que invalida refresh tokens
+- ✅ Testado com sucesso: obtenção de tokens, renovação e invalidação
 
-- **20:10 - Verificação de Email e CORS:**
-  - ✅ Adicionados campos `is_email_verified` e `email_verification_token` ao modelo PerfilUsuario
-  - ✅ Endpoints de verificação de email:
-    - `POST /api/verify-email/` - Verificar email com token
-    - `POST /api/resend-verification/` - Reenviar token de verificação
-  - ✅ Envio automático de email de verificação no registro
-  - ✅ CORS configurado com `django-cors-headers`
-    - Permite requisições de `http://localhost:3000` e `http://localhost:8000`
-    - Configurado para credenciais (cookies/auth)
+### Data: 22 de janeiro de 2026 [19:20]
+- **Implementações finalizadas - Testes e Recuperação de Senha:**
+- ✅ Implementados 15 testes automatizados (APITestCase) - TODOS PASSANDO
+  - Testes de registro, login, refresh de token e logout
+  - Testes de fluxo completo de autenticação
+- ✅ Endpoints de recuperação de senha:
+  - `POST /api/password-reset/` - Enviar email de reset
+  - `POST /api/password-reset-confirm/` - Confirmar nova senha
+- ✅ Validação de token usando PasswordResetTokenGenerator
+- ✅ Configurado backend de email (console para dev)
+
+### Data: 22 de janeiro de 2026 [20:10]
+- **Verificação de Email e CORS:**
+- ✅ Adicionados campos `is_email_verified` e `email_verification_token` ao modelo PerfilUsuario
+- ✅ Endpoints de verificação de email:
+  - `POST /api/verify-email/` - Verificar email com token
+  - `POST /api/resend-verification/` - Reenviar token de verificação
+- ✅ Envio automático de email de verificação no registro
+- ✅ CORS configurado com `django-cors-headers`
+  - Permite requisições de `http://localhost:3000` e `http://localhost:8000`
+  - Configurado para credenciais (cookies/auth)
+
+### Data: 23 de janeiro de 2026 [15:33]
+- **Melhorias de Segurança e Correções:**
+- ✅ **Expiração de Tokens de Verificação de Email (24h)**
+  - Adicionado campo `email_verification_expiry: DateTimeField` ao modelo `PerfilUsuario`
+  - Tokens de verificação agora expiram em 24 horas a partir da geração
+  - `RegisterView` e `ResendEmailVerificationView` atualizada com timestamp de expiração
+  - `VerifyEmailView` valida expiração antes de marcar email como verificado
+  - Migration criada: `usuarios/migrations/0003_perfilusuario_email_verification_expiry.py`
+
+- ✅ **Mensagens de Resposta Padronizadas**
+  - Todas as views agora usam padrão consistente:
+    - Sucesso: `{"message": "..."}`
+    - Erro: `{"error": "..."}`
+  - Aplicado em todas as views de autenticação e verificação
+
+- ✅ **Invalidação de Tokens após Reset de Senha**
+  - `SetNewPasswordView` agora invalida todos os refresh tokens ativos do usuário
+  - Força logout em todos os dispositivos após reset de senha
+  - Utiliza `rest_framework_simplejwt.token_blacklist` para blacklisting de tokens
+  - Mensagem atualizada: "Senha resetada com sucesso. Faça login novamente em todos os dispositivos."
+
+- ✅ **Correção de Erros nos Testes**
+  - Corrigido typo: `token_urlsafes` → `token_urlsafe`
+  - Corrigido uso de `serializer.data` → `serializer.validated_data`
+  - Ajustadas URLs dos testes para corresponder às rotas reais
+  - **Status Final: 18 testes - TODOS PASSANDO ✅**
+
+### 📊 **Data: 25 de janeiro de 2026 [19:40]** 
+#### **RESUMO COMPLETO - PRIORIDADE IMEDIATA CONCLUÍDA**
+
+**🎯 Projeto Base**
+- ✅ Django REST Framework 3.14.0 com DRF
+- ✅ SQLite3 configurado
+- ✅ Apps: usuarios, produtos, pedidos, pagamentos, carrinho
+- ✅ Painel Admin Django funcional
+
+**🔐 Autenticação & Segurança**
+- ✅ **JWT Token**
+  - `djangorestframework-simplejwt` instalado
+  - Access token (5min expiração)
+  - Refresh token (24h expiração)
+  - Token blacklist para logout forçado
+  - `POST /api/token/` - Obter tokens
+  - `POST /api/token/refresh/` - Renovar access token
+  - `POST /api/logout/` - Invalidar tokens (blacklist)
+
+- ✅ **Recuperação de Senha**
+  - `POST /api/password-reset/` - Requisita email de reset
+  - `POST /api/password-reset-confirm/` - Confirma nova senha
+  - Token de reset com expiração de 1 hora
+  - Usa `PasswordResetTokenGenerator` do Django
+  - **Invalidação automática**: Reset de senha blacklist todos os tokens ativos
+  - Força logout em todos os dispositivos após reset
+
+- ✅ **Verificação de Email**
+  - `POST /api/verify-email/` - Verifica com token
+  - `POST /api/resend-verification/` - Reenvia email
+  - Token de verificação com expiração de 24 horas
+  - Email automático no registro via `RegisterView`
+  - Campo `is_email_verified` no modelo PerfilUsuario
+  - Mensagens padronizadas de sucesso/erro
+
+**📧 Email (Backend)**
+- ✅ Console backend para desenvolvimento
+- ✅ Configurado em `settings.py`
+- ✅ Pronto para SMTP em produção (Gmail, etc)
+
+**🌐 CORS**
+- ✅ `django-cors-headers` instalado
+- ✅ Configurado para:
+  - `http://localhost:3000`
+  - `http://localhost:8000`
+  - `http://127.0.0.1:3000`
+  - `http://127.0.0.1:8000`
+- ✅ Credenciais ativadas (cookies/auth)
+
+**✅ Testes Automatizados**
+- ✅ **18 testes criados com APITestCase**
+- ✅ **Status: TODOS PASSANDO 100%**
+- ✅ Cobertura:
+  - Registro (sucesso, duplicado, sem username)
+  - Login (sucesso, senha incorreta, usuário inexistente)
+  - Refresh token (sucesso, inválido, faltando)
+  - Logout (sucesso, sem auth, sem token, token inválido)
+  - Fluxo completo: registro → login → usar → refresh → logout
+
+**📁 Estrutura Implementada**
+```
+usuarios/
+  ├── models.py
+  │   └── PerfilUsuario (user, telefone, endereco, is_email_verified, 
+  │                      email_verification_token, email_verification_expiry)
+  ├── views.py
+  │   ├── UserViewSet
+  │   ├── PerfilViewSet
+  │   ├── RegisterView (com email de verificação)
+  │   ├── VerifyEmailView (valida expiração)
+  │   ├── ResendEmailVerificationView
+  │   ├── logout_view (blacklist refresh token)
+  │   ├── PasswordResetRequestView (envia email)
+  │   ├── SetNewPasswordView (invalida tokens ativos)
+  ├── serializers.py
+  │   ├── UserSerializer
+  │   ├── PerfilSerializer
+  │   ├── RegisterSerializer
+  │   ├── EmailVerificationSerializer
+  │   ├── ResendEmailVerificationSerializer
+  │   ├── PasswordResetRequestSerializer
+  │   └── SetNewPasswordSerializer
+  ├── tests.py (18 testes com cobertura completa)
+  └── migrations/ (3 migrações)
+
+ecommerce/
+  ├── settings.py
+  │   ├── INSTALLED_APPS (rest_framework, token_blacklist, corsheaders)
+  │   ├── MIDDLEWARE (CorsMiddleware adicionado)
+  │   ├── CORS_ALLOWED_ORIGINS configurado
+  │   ├── EMAIL_BACKEND (console para dev)
+  │   └── REST_FRAMEWORK (JWT authentication)
+  └── urls.py
+      ├── /api/register/
+      ├── /api/token/
+      ├── /api/token/refresh/
+      ├── /api/logout/
+      ├── /api/password-reset/
+      ├── /api/password-reset-confirm/
+      ├── /api/verify-email/
+      └── /api/resend-verification/
+```
+
+**📦 Dependências Instaladas**
+- `django==6.0.1`
+- `djangorestframework==3.14.0`
+- `djangorestframework-simplejwt==5.3.2`
+- `django-cors-headers==4.3.1`
+- `python-dotenv` (para variáveis de ambiente)
+
+**⏱️ Tempos de Expiração Configurados**
+- Access token: 5 minutos
+- Refresh token: 24 horas
+- Token de reset de senha: 1 hora
+- Token de verificação de email: 24 horas
+
+**🔄 Fluxo de Autenticação Completo**
+1. Usuário se registra → Email de verificação enviado
+2. Usuário verifica email → `is_email_verified = True`
+3. Usuário faz login → Recebe access + refresh tokens
+4. Usa access token para requisições protegidas
+5. Quando access expirar → Usa refresh para novo access
+6. Quando fazer logout → Blacklist do refresh token (logout forçado)
+7. Esqueceu senha → Reset com email + novo password + logout forçado
+
+**🎯 Pronto para Produção (Próximos Passos)**
+- [ ] ALLOWED_HOSTS, SSL, cookies seguros
+- [ ] PostgreSQL em produção
+- [ ] Docker + docker-compose
+- [ ] Swagger/Redoc para documentação
+- [ ] GitHub Actions para CI/CD
+- [ ] Rate limiting nos endpoints
+
 
 ## Setup do Projeto
 

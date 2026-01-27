@@ -7,9 +7,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import smart_bytes, smart_str, DjangoUnicodeDecodeError
+from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from secrets import token_urlsafe
+from datetime import timedelta
 from .models import PerfilUsuario
 from .serializers import (
     UserSerializer, PerfilSerializer, RegisterSerializer,
@@ -39,6 +41,7 @@ class RegisterView(generics.CreateAPIView):
         verification_token = token_urlsafe(32)
         perfil = PerfilUsuario.objects.get(user=user)
         perfil.email_verification_token = verification_token
+        perfil.email_verification_expiry = timezone.now() + timedelta(hours=24)
         perfil.save()
         
         # Enviar email de verificação
@@ -84,7 +87,7 @@ def logout_view(request):
         token.blacklist()
         
         return Response(
-            {'message': 'Token foi invalidado com sucesso'},
+            {'message': 'Logout realizado com sucesso'},
             status=status.HTTP_205_RESET_CONTENT
         )
     except Exception as e:
@@ -109,8 +112,17 @@ class VerifyEmailView(generics.GenericAPIView):
         try:
             token = serializer.data.get('token')
             perfil = PerfilUsuario.objects.get(email_verification_token=token)
+            
+            # Validar expiração do token
+            if perfil.email_verification_expiry and timezone.now() > perfil.email_verification_expiry:
+                return Response(
+                    {'error': 'Token expirado. Solicite um novo token de verificação.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             perfil.is_email_verified = True
             perfil.email_verification_token = ''
+            perfil.email_verification_expiry = None
             perfil.save()
             
             return Response(
@@ -148,6 +160,7 @@ class ResendEmailVerificationView(generics.GenericAPIView):
             # Gerar novo token
             verification_token = token_urlsafe(32)
             perfil.email_verification_token = verification_token
+            perfil.email_verification_expiry = timezone.now() + timedelta(hours=24)
             perfil.save()
             
             # Enviar email
@@ -242,6 +255,7 @@ class SetNewPasswordView(generics.GenericAPIView):
     """
     View para confirmar novo password
     Recebe uidb64, token e nova senha
+    Invalida todos os refresh tokens ativos após reset
     """
     serializer_class = SetNewPasswordSerializer
     permission_classes = (AllowAny,)
@@ -251,9 +265,9 @@ class SetNewPasswordView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         
         try:
-            password = serializer.data.get('password')
-            token = serializer.data.get('token')
-            uidb64 = serializer.data.get('uidb64')
+            password = serializer.validated_data.get('password')
+            token = serializer.validated_data.get('token')
+            uidb64 = serializer.validated_data.get('uidb64')
             
             # Decodificar user id
             user_id = smart_str(urlsafe_base64_decode(uidb64))
@@ -270,8 +284,21 @@ class SetNewPasswordView(generics.GenericAPIView):
             user.set_password(password)
             user.save()
             
+            # Invalidar todos os refresh tokens ativos do usuário
+            try:
+                from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+                outstanding_tokens = OutstandingToken.objects.filter(user=user)
+                for token_obj in outstanding_tokens:
+                    BlacklistedToken.objects.get_or_create(token=token_obj)
+            except ImportError:
+                # Se token_blacklist não estiver configurado, ignorar
+                pass
+            except Exception as e:
+                # Log do erro mas não falha a operação
+                print(f"Aviso: Não foi possível blacklist todos os tokens: {str(e)}")
+            
             return Response(
-                {'message': 'Senha resetada com sucesso'},
+                {'message': 'Senha resetada com sucesso. Faça login novamente em todos os dispositivos.'},
                 status=status.HTTP_200_OK
             )
         
