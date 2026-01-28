@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from produtos.views import ProdutoViewSet
+from produtos.views import ProdutoViewSet, meus_pedidos
 from usuarios.views import (
     UserViewSet, PerfilViewSet, RegisterView, logout_view,
     PasswordResetRequestView, SetNewPasswordView,
@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/password-reset-confirm/', SetNewPasswordView.as_view(), name='password_reset_confirm'),
     path('api/verify-email/', VerifyEmailView.as_view(), name='verify_email'),
     path('api/resend-verification/', ResendEmailVerificationView.as_view(), name='resend_verification'),
+    path('api/meus-pedidos/', meus_pedidos, name='meus_pedidos'),
 ]

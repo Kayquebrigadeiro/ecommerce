@@ -45,9 +45,12 @@ wheels/
 # Testing
 test_api.py
 test_api2.py
+test_*.py
+criar_*_teste.py
 produto.json
 .pytest_cache/
 .coverage
+htmlcov/
 
 # Static and Media
 /staticfiles/

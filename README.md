@@ -625,6 +625,32 @@ json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 **Gerado por:** GitHub Copilot + Desenvolvedor
 
 
+# 📌 Progresso do Projeto
+
+**📅 Data:** 28/01/2026  
+**⏰ Horário:** 20:07 (Brasília Standard Time)
+
+## ✅ O que foi feito hoje
+- Revisão do `settings.py` confirmando:
+  - Banco de dados alternando entre SQLite (dev) e PostgreSQL (produção).
+  - Apps registrados: `usuarios`, `produtos`, `pedidos`, `pagamentos`, `core`.
+  - Autenticação JWT configurada.
+  - CORS habilitado para localhost.
+- Modelos criados:
+  - `Pedido` com status, total e timestamps.
+  - `ItemPedido` vinculado ao `Pedido` e ao `Produto`.
+- Migrações rodadas (`makemigrations` / `migrate`), mas sem novas alterações detectadas.
+- Tentativa de usar `dbshell` → erro por falta do `sqlite3.exe`.
+- Download do pacote correto do SQLite discutido (`sqlite-tools-win-x64-3510200.zip`).
+- Extrair e configurar PATH para reconhecer `sqlite3.exe`.
+- ❌ **Não consegui instalar o SQLite corretamente**: o executável `sqlite3.exe` não apareceu após extração, impedindo o uso do `dbshell`.
+
+## 🚀 Próximos passos
+1. Garantir que o `sqlite3.exe` esteja instalado e acessível no PATH.  
+2. Rodar:
+   ```powershell
+   sqlite3 --version
+   python manage.py dbshell
 
 
 
