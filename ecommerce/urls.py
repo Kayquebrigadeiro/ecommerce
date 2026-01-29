@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from produtos.views import ProdutoViewSet, meus_pedidos
+from produtos.views import ProdutoViewSet
+from pedidos.views import PedidoViewSet, meus_pedidos
 from usuarios.views import (
     UserViewSet, PerfilViewSet, RegisterView, logout_view,
     PasswordResetRequestView, SetNewPasswordView,
@@ -13,7 +14,7 @@ router = routers.DefaultRouter()
 router.register(r'usuarios', UserViewSet)
 router.register(r'perfis', PerfilViewSet)
 router.register(r'produtos', ProdutoViewSet)
-
+router.register(r'pedidos', PedidoViewSet, basename='pedido')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),

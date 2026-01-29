@@ -249,11 +249,13 @@ class IntegracaoFluxoCompletoTestCase(APITestCase):
         response_refresh = self.client.post(self.refresh_url, dados_refresh, format='json')
         self.assertEqual(response_refresh.status_code, status.HTTP_200_OK)
         novo_access_token = response_refresh.data['access']
+        # Com ROTATE_REFRESH_TOKENS, o refresh token também muda
+        novo_refresh_token = response_refresh.data.get('refresh', refresh_token)
         self.assertNotEqual(novo_access_token, access_token)
         
-        # 5. Logout
+        # 5. Logout (usar o novo refresh token se houver rotação)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {novo_access_token}')
-        dados_logout = {'refresh': refresh_token}
+        dados_logout = {'refresh': novo_refresh_token}
         response_logout = self.client.post(self.logout_url, dados_logout, format='json')
         self.assertEqual(response_logout.status_code, status.HTTP_205_RESET_CONTENT)
 class EmailVerificationTestCase(APITestCase):

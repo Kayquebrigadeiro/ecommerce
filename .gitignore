@@ -11,6 +11,8 @@ db.sqlite3
 
 # Python
 __pycache__/
+*/__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -58,3 +60,8 @@ htmlcov/
 
 # Logs
 *.log
+
+# Elastic Beanstalk
+.elasticbeanstalk/
+.ebextensions/
+*.zip

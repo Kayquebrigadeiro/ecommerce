@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'usuarios',
     'produtos',
-    'pedidos',
+    'pedidos.apps.PedidosConfig',
     'pagamentos',
     'core',
 ]
@@ -111,10 +111,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+from datetime import timedelta
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 CORS_ALLOWED_ORIGINS = [
@@ -127,3 +140,4 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_FROM_USER = 'noreply@ecommerce.com'
