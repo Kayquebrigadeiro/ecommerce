@@ -1,10 +1,14 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.14'
+  DJANGO_SETTINGS_MODULE: 'ecommerce.settings'
 
 jobs:
   test-and-lint:
@@ -25,7 +29,6 @@ jobs:
           --health-retries 5
 
     env:
-      DJANGO_SETTINGS_MODULE: ecommerce.settings
       SECRET_KEY: test-secret-key-for-ci-only
       DEBUG: True
       ALLOWED_HOSTS: localhost,127.0.0.1
@@ -34,17 +37,18 @@ jobs:
       DATABASE_PASSWORD: postgres
       DATABASE_HOST: localhost
       DATABASE_PORT: 5432
+      EMAIL_FROM_USER: noreply@test.com
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Configurar Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.14'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache pip dependencies
+      - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -52,93 +56,66 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Instalar dependências
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 coverage
 
-      - name: Wait for PostgreSQL
+      - name: Aguardar Postgres
         run: |
           for i in {1..30}; do
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 1
           done
 
-      - name: Run migrations
+      - name: Rodar migrations (banco de teste)
         run: |
           python manage.py makemigrations --noinput
           python manage.py migrate --noinput
 
-      - name: Run lint (flake8)
+      - name: Rodar lint
         run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          pip install flake8
+          flake8 .
 
-      - name: Run tests with coverage
+      - name: Rodar testes
         run: |
-          coverage run --source='.' manage.py test
-          coverage report
-          coverage xml
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+          python manage.py test
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && success()
     runs-on: ubuntu-latest
     needs: test-and-lint
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Configurar Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.14'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install EB CLI
+      - name: Instalar EB CLI
         run: |
           python -m pip install --upgrade pip
           pip install awsebcli
 
-      - name: Configure AWS credentials
+      - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Initialize EB and deploy
+      - name: Inicializar EB e fazer deploy
         env:
           EB_APP_NAME: ${{ secrets.EB_APP_NAME }}
           EB_ENV_NAME: ${{ secrets.EB_ENV_NAME }}
         run: |
+          # Inicializa o app EB (assume que o app/environment já existem)
           eb init $EB_APP_NAME --region ${{ secrets.AWS_REGION }} --platform "Python 3.11"
           eb use $EB_ENV_NAME
           eb deploy --staged
 
-      - name: Run migrations on EB
-        if: success()
-        env:
-          EB_ENV_NAME: ${{ secrets.EB_ENV_NAME }}
-        run: |
-          eb ssh $EB_ENV_NAME --command "source /var/app/venv/*/bin/activate && python manage.py migrate --noinput" || echo "⚠️ Run migrations manually via EB console"
-
-      - name: Collect static files on EB
-        if: success()
-        env:
-          EB_ENV_NAME: ${{ secrets.EB_ENV_NAME }}
-        run: |
-          eb ssh $EB_ENV_NAME --command "source /var/app/venv/*/bin/activate && python manage.py collectstatic --noinput" || echo "⚠️ Run collectstatic manually via EB console"
-
-      - name: Deployment notification
-        if: success()
-        run: |
-          echo "✅ Deploy concluído com sucesso!"
-          echo "🚀 Aplicação disponível em: ${{ secrets.EB_ENV_NAME }}.elasticbeanstalk.com"
+      - name: Notificar deploy concluído
+        run: echo "Deploy para Elastic Beanstalk concluído (verifique o console AWS para migrações e collectstatic)."
