@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -19,17 +20,25 @@ if DEBUG:
         }
     }
 else:
-    # Produção: PostgreSQL
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv("DATABASE_NAME"),
-            'USER': os.getenv("DATABASE_USER"),
-            'PASSWORD': os.getenv("DATABASE_PASSWORD"),
-            'HOST': os.getenv("DATABASE_HOST"),
-            'PORT': os.getenv("DATABASE_PORT"),
+    # Produção: PostgreSQL (Render)
+    # Usar Internal_Database_URL do Render
+    database_url = os.getenv("Internal_Database_URL")
+    if database_url:
+        DATABASES = {
+            'default': dj_database_url.parse(database_url)
         }
-    }
+    else:
+        # Fallback para variáveis individuais
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv("Database"),
+                'USER': os.getenv("username"),
+                'PASSWORD': os.getenv("PASSWORD"),
+                'HOST': os.getenv("Internal_Database_URL", "").split("@")[-1].split("/")[0] if "@" in os.getenv("Internal_Database_URL", "") else "",
+                'PORT': os.getenv("Port", "5432"),
+            }
+        }
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
