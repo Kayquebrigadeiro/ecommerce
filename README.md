@@ -654,3 +654,96 @@ json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 
 
 
+Relatório de tentativa de deploy
+Data e hora: 29 de janeiro de 2026, 21:47 (BRT)
+Timestamp (ISO): 2026-01-29T21:47:00-03:00
+
+Resumo do que foi feito
+- Gerado um Personal Access Token (PAT) no GitHub, mas houve dificuldade para colar no console web.
+- Tentativa de usar HTTPS falhou por não conseguir inserir o token no prompt de senha.
+- Optou‑se por SSH: foi gerada uma chave ED25519 no PythonAnywhere e a chave pública foi exibida (randomart confirmado).
+- Adicionado o host github.com ao known_hosts (foi necessário digitar yes por extenso).
+- Alterado o remoto para SSH: git@github.com:Kayquebrigadeiro/ecommerce.git.
+- Push falhou com non-fast-forward — o remoto tinha commits que não existiam localmente.
+- Criado branch minha-fix com o trabalho local e push desse branch para o remoto.
+- Pull Request aberto no GitHub, mas apareceu um X (indicação de conflito ou checks falhando).
+- Tentativas de merge não concluídas; processo interrompido.
+
+Erros e mensagens importantes (resumo)
+- The authenticity of host 'github.com' can't be established. → exigiu yes por extenso.
+- ! [rejected] HEAD -> main (non-fast-forward) → remoto à frente do local; é preciso integrar mudanças antes de push.
+- PR mostrou X (possíveis conflitos ou checks/CI falhando) — merge não concluído.
+
+Comandos executados (registro resumido)
+# SSH
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub
+
+# ajustar remoto e testar push
+git remote set-url origin git@github.com:Kayquebrigadeiro/ecommerce.git
+git push origin HEAD   # -> rejected non-fast-forward
+
+# criar branch e enviar
+git checkout -b minha-fix
+git push origin minha-fix
+
+
+
+Plano de ação para amanhã (passo a passo para repetir e concluir)
+Antes de começar: abra o repositório no GitHub e deixe a aba do PR aberta para acompanhar checks e conflitos.
+- Confirmar branch remoto e PR
+- Verificar no GitHub se o PR minha-fix mostra conflitos ou qual check falhou.
+- Atualizar e integrar mudanças (recomendado: rebase)
+cd ~/ecommerce
+git fetch origin
+git checkout minha-fix
+git pull --rebase origin main
+# resolver conflitos se aparecerem:
+# editar arquivos com <<<<<<< / ======= / >>>>>>>
+git add <arquivo-resolvido>
+git rebase --continue
+git push origin minha-fix --force-with-lease
+- Observação: --force-with-lease é mais seguro que --force.
+- Se preferir não rebasear, usar merge
+git checkout minha-fix
+git pull origin main
+# resolver conflitos, git add, git commit
+git push origin minha-fix
+- No GitHub
+- Atualizar a página do PR; quando checks passarem e não houver conflitos, clicar Merge pull request → Confirm merge.
+- Atualizar PythonAnywhere após merge
+cd ~/ecommerce
+git checkout main
+git pull origin main
+
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+
+python manage.py migrate
+python manage.py collectstatic --noinput
+- Reiniciar o Web App pelo painel do PythonAnywhere (Web → Reload).
+- Se houver falta de espaço
+du -h --max-depth=1 ~ | sort -hr
+
+
+- Remover arquivos grandes desnecessários antes de collectstatic.
+
+Checklist rápido para colar/rodar amanhã
+- git fetch origin
+- git checkout minha-fix
+- git pull --rebase origin main (resolver conflitos se houver)
+- git push origin minha-fix --force-with-lease
+- Mesclar PR no GitHub
+- git checkout main && git pull origin main
+- source venv/bin/activate && pip install -r requirements.txt
+- python manage.py migrate && python manage.py collectstatic --noinput
+- Reload no painel Web do PythonAnywhere
+
+Notas úteis
+- No prompt de Password do Git/SSH, o terminal não mostra caracteres enquanto você digita; isso é normal.
+- Para confirmar host SSH, digite yes por extenso (não y).
+- Use SSH para evitar ter que colar o token repetidamente.
+- Se o PR falhar por checks (CI), abra a aba Checks no PR para ver o erro específico.
+
+Posso preparar um checklist de comandos prontos para colar amanhã e um passo a passo interativo para cada erro que aparecer.
