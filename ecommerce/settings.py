@@ -20,25 +20,14 @@ if DEBUG:
         }
     }
 else:
-    # Produção: PostgreSQL (Render)
-    # Usar Internal_Database_URL do Render
-    database_url = os.getenv("Internal_Database_URL")
-    if database_url:
-        DATABASES = {
-            'default': dj_database_url.parse(database_url)
-        }
-    else:
-        # Fallback para variáveis individuais
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': os.getenv("Database"),
-                'USER': os.getenv("username"),
-                'PASSWORD': os.getenv("PASSWORD"),
-                'HOST': os.getenv("Internal_Database_URL", "").split("@")[-1].split("/")[0] if "@" in os.getenv("Internal_Database_URL", "") else "",
-                'PORT': os.getenv("Port", "5432"),
-            }
-        }
+    # Produção: PostgreSQL (Render usa DATABASE_URL)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
