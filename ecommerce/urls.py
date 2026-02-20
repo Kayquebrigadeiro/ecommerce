@@ -3,6 +3,8 @@ from django.urls import path, include
 from rest_framework import routers
 from produtos.views import ProdutoViewSet
 from pedidos.views import PedidoViewSet, meus_pedidos
+from carrinho.views import CarrinhoViewSet
+from pagamentos.views import PagamentoViewSet
 from usuarios.views import (
     UserViewSet, PerfilViewSet, RegisterView, logout_view,
     PasswordResetRequestView, SetNewPasswordView,
@@ -15,6 +17,9 @@ router.register(r'usuarios', UserViewSet)
 router.register(r'perfis', PerfilViewSet)
 router.register(r'produtos', ProdutoViewSet)
 router.register(r'pedidos', PedidoViewSet, basename='pedido')
+router.register(r'carrinho', CarrinhoViewSet, basename='carrinho')
+router.register(r'pagamentos', PagamentoViewSet, basename='pagamento')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),

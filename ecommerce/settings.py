@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'usuarios',
     'produtos',
     'pedidos.apps.PedidosConfig',
+    'carrinho',
     'pagamentos',
     'core',
 ]

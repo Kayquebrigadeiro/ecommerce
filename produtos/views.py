@@ -12,7 +12,7 @@ from pedidos.serializers import PedidoSerializer
 class ProdutoViewSet(viewsets.ModelViewSet):
     queryset = Produto.objects.all()
     serializer_class = ProdutoSerializer
-    permission_classes = [IsAuthenticated]  # Só acessa com token, válido!
+    # permission_classes = [IsAuthenticated]  # Desabilitado para permitir acesso público aos produtos
 
 
 @api_view(['GET'])
